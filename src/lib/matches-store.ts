@@ -17,6 +17,15 @@ import type { MatchInput } from "./validation";
 const DATABASE_URL = process.env.DATABASE_URL;
 export const usingDatabase = Boolean(DATABASE_URL);
 
+// On Vercel (and any production environment) the filesystem is read-only, so
+// the local file fallback won't work. Fail fast with a helpful message instead
+// of a cryptic ENOENT crash.
+if (!usingDatabase && process.env.NODE_ENV === "production") {
+  throw new Error(
+    "DATABASE_URL is not set. Connect a Neon database in your Vercel project under Storage → Create Database.",
+  );
+}
+
 function normalize(input: MatchInput): Omit<Match, "id" | "created_at"> {
   return {
     home_team: input.home_team,
