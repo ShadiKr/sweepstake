@@ -40,9 +40,9 @@ export function MatchForm({ onSaved }: { onSaved: () => void }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4"
+      className="space-y-4 rounded-xl border border-[#1a2d50] bg-[#060f2a] p-5"
     >
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400/80">
         Add a result
       </h2>
       <MatchFields value={value} onChange={setValue} />
@@ -50,7 +50,7 @@ export function MatchForm({ onSaved }: { onSaved: () => void }) {
       <button
         type="submit"
         disabled={saving}
-        className="w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {saving ? "Saving…" : "Add match"}
       </button>

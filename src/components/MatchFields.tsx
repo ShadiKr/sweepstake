@@ -39,7 +39,7 @@ export function toMatchBody(v: MatchFormValue) {
 }
 
 const inputClass =
-  "rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none";
+  "rounded-lg border border-[#1a2d50] bg-[#02071a] px-3 py-2 text-sm text-slate-100 focus:border-amber-500/60 focus:outline-none";
 
 export function MatchFields({
   value,

@@ -5,7 +5,7 @@ import { DRAW } from "@/lib/teams";
 import type { Player, Standing, TeamStat } from "@/lib/types";
 import { Flag } from "./Flag";
 
-const medal = ["🥇", "🥈", "🥉"];
+const medals = ["🥇", "🥈", "🥉"];
 
 export function LeaderboardTable({
   standings,
@@ -17,21 +17,21 @@ export function LeaderboardTable({
   const [open, setOpen] = useState<Player | null>(null);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-800">
+    <div className="overflow-hidden rounded-xl border border-[#1a2d50]">
       <table className="w-full text-sm">
-        <thead className="bg-slate-900 text-xs uppercase tracking-wide text-slate-400">
-          <tr>
-            <th className="px-3 py-3 text-left font-medium">#</th>
-            <th className="px-3 py-3 text-left font-medium">Player</th>
-            <th className="px-2 py-3 text-center font-medium">P</th>
-            <th className="hidden px-2 py-3 text-center font-medium sm:table-cell">W</th>
-            <th className="hidden px-2 py-3 text-center font-medium sm:table-cell">D</th>
-            <th className="hidden px-2 py-3 text-center font-medium sm:table-cell">L</th>
-            <th className="px-2 py-3 text-center font-medium">GD</th>
-            <th className="px-3 py-3 text-right font-medium text-slate-200">Pts</th>
+        <thead>
+          <tr className="border-b border-amber-500/30 bg-[#071130]">
+            <th className="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-amber-400/70">#</th>
+            <th className="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-amber-400/70">Player</th>
+            <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider text-amber-400/70">P</th>
+            <th className="hidden px-2 py-3 text-center text-xs font-bold uppercase tracking-wider text-amber-400/70 sm:table-cell">W</th>
+            <th className="hidden px-2 py-3 text-center text-xs font-bold uppercase tracking-wider text-amber-400/70 sm:table-cell">D</th>
+            <th className="hidden px-2 py-3 text-center text-xs font-bold uppercase tracking-wider text-amber-400/70 sm:table-cell">L</th>
+            <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider text-amber-400/70">GD</th>
+            <th className="px-3 py-3 text-right text-xs font-bold uppercase tracking-wider text-amber-400">Pts</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-800">
+        <tbody className="divide-y divide-[#0f1f3d]">
           {standings.map((s, i) => {
             const isOpen = open === s.player;
             return (
@@ -64,32 +64,53 @@ function FragmentRow({
   onToggle: () => void;
   teamStats: Record<string, TeamStat>;
 }) {
+  const isTop3 = rank < 3;
   return (
     <>
       <tr
         onClick={onToggle}
-        className="cursor-pointer bg-slate-950 transition hover:bg-slate-900/60"
+        className={`cursor-pointer transition-colors hover:bg-[#071130] ${
+          isTop3 ? "bg-[#060f2a]" : "bg-[#040d24]"
+        }`}
       >
-        <td className="px-3 py-3 text-slate-400">{medal[rank] ?? rank + 1}</td>
-        <td className="px-3 py-3 font-medium">
+        <td className="px-3 py-3 text-slate-400">
+          {medals[rank] ?? <span className="text-slate-600">{rank + 1}</span>}
+        </td>
+        <td className="px-3 py-3 font-semibold text-slate-100">
           <span className="inline-flex items-center gap-2">
-            <span className={`text-xs text-slate-500 transition ${isOpen ? "rotate-90" : ""}`}>
+            <span
+              className={`text-xs text-slate-600 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
+            >
               ▶
             </span>
             {s.player}
           </span>
         </td>
-        <td className="px-2 py-3 text-center text-slate-300">{s.played}</td>
-        <td className="hidden px-2 py-3 text-center text-slate-300 sm:table-cell">{s.won}</td>
-        <td className="hidden px-2 py-3 text-center text-slate-300 sm:table-cell">{s.drawn}</td>
-        <td className="hidden px-2 py-3 text-center text-slate-300 sm:table-cell">{s.lost}</td>
-        <td className="px-2 py-3 text-center text-slate-300">
+        <td className="px-2 py-3 text-center text-slate-400">{s.played}</td>
+        <td className="hidden px-2 py-3 text-center text-slate-400 sm:table-cell">{s.won}</td>
+        <td className="hidden px-2 py-3 text-center text-slate-400 sm:table-cell">{s.drawn}</td>
+        <td className="hidden px-2 py-3 text-center text-slate-400 sm:table-cell">{s.lost}</td>
+        <td className="px-2 py-3 text-center text-slate-400">
           {s.gd > 0 ? `+${s.gd}` : s.gd}
         </td>
-        <td className="px-3 py-3 text-right text-lg font-bold text-emerald-400">{s.points}</td>
+        <td className="px-3 py-3 text-right">
+          <span
+            className={`text-lg font-black tabular-nums ${
+              rank === 0
+                ? "text-amber-400"
+                : rank === 1
+                  ? "text-slate-300"
+                  : rank === 2
+                    ? "text-amber-700"
+                    : "text-slate-400"
+            }`}
+          >
+            {s.points}
+          </span>
+        </td>
       </tr>
       {isOpen && (
-        <tr className="bg-slate-900/40">
+        <tr className="bg-[#071130]">
           <td colSpan={8} className="px-3 py-3">
             <TeamBreakdown player={s.player} teamStats={teamStats} />
           </td>
@@ -119,9 +140,9 @@ function TeamBreakdown({
         return (
           <div
             key={team}
-            className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2"
+            className="flex items-center justify-between rounded-lg border border-[#1a2d50] bg-[#040d24] px-3 py-2"
           >
-            <span className="flex items-center gap-2 font-medium text-slate-200">
+            <span className="flex items-center gap-2 text-sm font-medium text-slate-200">
               <Flag team={team} className="text-base" />
               {team}
             </span>
@@ -129,7 +150,7 @@ function TeamBreakdown({
               {t ? (
                 <>
                   <span className="text-slate-300">{t.won}W</span> {t.drawn}D {t.lost}L ·{" "}
-                  <span className="font-semibold text-emerald-400">{t.points} pts</span>
+                  <span className="font-bold text-amber-400">{t.points} pts</span>
                 </>
               ) : (
                 <span className="text-slate-600">no games yet</span>

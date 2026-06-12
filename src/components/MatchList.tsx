@@ -24,7 +24,7 @@ export function MatchList({
   }
   if (matches.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-sm text-slate-500">
+      <p className="rounded-xl border border-dashed border-[#1a2d50] px-4 py-8 text-center text-sm text-slate-600">
         No matches yet. Add the first result above.
       </p>
     );
@@ -84,14 +84,14 @@ function MatchRow({ match, onChanged }: { match: Match; onChanged: () => void })
 
   if (editing) {
     return (
-      <div className="space-y-3 rounded-xl border border-emerald-900 bg-slate-900/60 p-4">
+      <div className="space-y-3 rounded-xl border border-amber-500/30 bg-[#060f2a] p-4">
         <MatchFields value={value} onChange={setValue} />
         {error && <p className="text-sm text-red-400">{error}</p>}
         <div className="flex gap-2">
           <button
             onClick={save}
             disabled={busy}
-            className="rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
+            className="rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-bold text-slate-950 transition hover:bg-amber-400 disabled:opacity-50"
           >
             {busy ? "Saving…" : "Save"}
           </button>
@@ -102,7 +102,7 @@ function MatchRow({ match, onChanged }: { match: Match; onChanged: () => void })
               setError(null);
             }}
             disabled={busy}
-            className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 transition hover:bg-slate-800"
+            className="rounded-lg border border-[#1a2d50] px-3 py-1.5 text-sm text-slate-300 transition hover:bg-[#071130]"
           >
             Cancel
           </button>
@@ -119,16 +119,18 @@ function MatchRow({ match, onChanged }: { match: Match; onChanged: () => void })
         : "draw";
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl border border-[#1a2d50] bg-[#040d24] px-4 py-3">
       <div className="min-w-0 flex-1">
         {match.stage && (
-          <div className="mb-0.5 text-xs uppercase tracking-wide text-slate-500">
+          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400/50">
             {match.stage}
           </div>
         )}
         <div className="flex items-center gap-2 text-sm">
           <TeamLabel name={match.home_team} bold={winner === "home"} align="right" />
-          <span className="shrink-0 rounded-md bg-slate-800 px-2 py-0.5 font-mono font-semibold text-slate-100">
+          <span className={`shrink-0 rounded-md px-2 py-0.5 font-mono font-bold ${
+            winner === "draw" ? "bg-[#1a2d50] text-slate-300" : "bg-[#0a1535] text-amber-300"
+          }`}>
             {match.home_score}–{match.away_score}
           </span>
           <TeamLabel name={match.away_team} bold={winner === "away"} align="left" />
@@ -143,7 +145,7 @@ function MatchRow({ match, onChanged }: { match: Match; onChanged: () => void })
         <button
           onClick={() => setEditing(true)}
           disabled={busy}
-          className="rounded-md px-2 py-1 text-xs text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
+          className="rounded-md px-2 py-1 text-xs text-slate-500 transition hover:bg-[#071130] hover:text-slate-100"
         >
           Edit
         </button>

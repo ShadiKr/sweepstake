@@ -6,5 +6,13 @@
 
 html,
 body {
-  background-color: #020617; /* slate-950 */
+  background-color: #02071a;
+  /* Subtle vertical pitch stripes — like a stadium under floodlights */
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 79px,
+    rgba(255, 255, 255, 0.013) 79px,
+    rgba(255, 255, 255, 0.013) 80px
+  );
 }

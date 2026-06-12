@@ -13,7 +13,10 @@ export default function MatchesPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Matches</h1>
+        <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-400/80">
+          FIFA World Cup 2026™
+        </p>
+        <h1 className="mt-1 text-3xl font-black tracking-tight text-white">Match Results</h1>
         <p className="mt-1 text-sm text-slate-400">
           Add a result for any two teams. Anyone can add, edit, or delete.
         </p>
