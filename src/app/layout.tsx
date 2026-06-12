@@ -23,7 +23,7 @@ export default function RootLayout({
                 FIFA World Cup 2026™
               </span>
               <span className="text-xl font-black tracking-tight text-white">
-                Friends Sweepstake
+                Beer Sweepstake
               </span>
             </Link>
 
