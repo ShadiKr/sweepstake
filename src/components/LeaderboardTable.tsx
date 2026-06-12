@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DRAW } from "@/lib/teams";
 import type { Player, Standing, TeamStat } from "@/lib/types";
+import { Flag } from "./Flag";
 
 const medal = ["🥇", "🥈", "🥉"];
 
@@ -120,7 +121,10 @@ function TeamBreakdown({
             key={team}
             className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2"
           >
-            <span className="font-medium text-slate-200">{team}</span>
+            <span className="flex items-center gap-2 font-medium text-slate-200">
+              <Flag team={team} className="text-base" />
+              {team}
+            </span>
             <span className="text-xs text-slate-400">
               {t ? (
                 <>

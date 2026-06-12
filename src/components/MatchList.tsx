@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TEAM_OWNER } from "@/lib/teams";
 import type { Match } from "@/lib/types";
+import { Flag } from "./Flag";
 import {
   MatchFields,
   toMatchBody,
@@ -169,9 +170,16 @@ function TeamLabel({
 }) {
   const owner = TEAM_OWNER[name];
   return (
-    <span className={`flex-1 ${align === "right" ? "text-right" : "text-left"}`}>
-      <span className={bold ? "font-semibold text-slate-100" : "text-slate-300"}>{name}</span>
-      {owner && <span className="ml-1 text-xs text-slate-500">({owner})</span>}
+    <span
+      className={`flex flex-1 items-center gap-2 ${
+        align === "right" ? "flex-row-reverse text-right" : "flex-row text-left"
+      }`}
+    >
+      <Flag team={name} className="text-base" />
+      <span className="min-w-0">
+        <span className={bold ? "font-semibold text-slate-100" : "text-slate-300"}>{name}</span>
+        {owner && <span className="ml-1 text-xs text-slate-500">({owner})</span>}
+      </span>
     </span>
   );
 }

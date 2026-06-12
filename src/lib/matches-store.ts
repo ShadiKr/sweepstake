@@ -18,12 +18,15 @@ const DATABASE_URL = process.env.DATABASE_URL;
 export const usingDatabase = Boolean(DATABASE_URL);
 
 // On Vercel (and any production environment) the filesystem is read-only, so
-// the local file fallback won't work. Fail fast with a helpful message instead
-// of a cryptic ENOENT crash.
-if (!usingDatabase && process.env.NODE_ENV === "production") {
-  throw new Error(
-    "DATABASE_URL is not set. Connect a Neon database in your Vercel project under Storage → Create Database.",
-  );
+// the local JSON fallback won't work. Guard at request time (not module load,
+// which would break `next build`) with a helpful message instead of a cryptic
+// ENOENT crash.
+function ensureWritableStore(): void {
+  if (!usingDatabase && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "DATABASE_URL is not set. Connect a Neon database in your Vercel project under Storage → Create Database.",
+    );
+  }
 }
 
 function normalize(input: MatchInput): Omit<Match, "id" | "created_at"> {
@@ -90,6 +93,7 @@ async function neonDelete(id: number): Promise<boolean> {
 const DATA_FILE = path.join(process.cwd(), ".data", "matches.json");
 
 async function fileReadAll(): Promise<Match[]> {
+  ensureWritableStore();
   try {
     const raw = await fs.readFile(DATA_FILE, "utf8");
     return JSON.parse(raw) as Match[];
@@ -99,6 +103,7 @@ async function fileReadAll(): Promise<Match[]> {
 }
 
 async function fileWriteAll(matches: Match[]): Promise<void> {
+  ensureWritableStore();
   await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
   await fs.writeFile(DATA_FILE, JSON.stringify(matches, null, 2), "utf8");
 }
