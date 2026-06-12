@@ -1,0 +1,28 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# local data fallback (used when DATABASE_URL is not set)
+/.data
+
+# env files
+.env*.local
+
+# typescript
+next-env.d.ts
+*.tsbuildinfo
+
+# claude code local config
+.claude/
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+.vercel
