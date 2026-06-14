@@ -110,7 +110,7 @@ async function neonUpsertExternal(m: ExternalMatch): Promise<UpsertOutcome> {
   const rows = await sql`
     insert into matches (external_id, home_team, away_team, home_score, away_score, stage, pen_winner, source)
     values (${m.external_id}, ${m.home_team}, ${m.away_team}, ${m.home_score}, ${m.away_score}, ${m.stage}, ${m.pen_winner}, 'auto')
-    on conflict (external_id) do update set
+    on conflict (external_id) where external_id is not null do update set
       home_team = excluded.home_team,
       away_team = excluded.away_team,
       home_score = excluded.home_score,

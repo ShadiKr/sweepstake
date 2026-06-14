@@ -7,8 +7,8 @@ import {
 import { resolveTeam } from "./team-matching";
 import type { SyncResult } from "./types";
 
-/** Minimum time between automatic syncs. Keeps us well under the API rate limit. */
-const MIN_INTERVAL_MS = 90_000; // 90 seconds
+/** Minimum time between automatic syncs. Low enough to sync on effectively every page load. */
+const MIN_INTERVAL_MS = 10_000; // 10 seconds
 
 /**
  * Pull World Cup fixtures from football-data.org and upsert them into the DB.
