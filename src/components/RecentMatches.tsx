@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Match } from "@/lib/types";
+import { TEAM_OWNER } from "@/lib/teams";
 import { Flag } from "./Flag";
 
 export function RecentMatches({ matches, limit = 8 }: { matches: Match[]; limit?: number }) {
@@ -41,12 +42,19 @@ export function RecentMatches({ matches, limit = 8 }: { matches: Match[]; limit?
                 )}
                 <div className="flex items-center gap-2">
                   <span className="flex min-w-0 flex-1 items-center justify-end gap-1.5 text-right">
-                    <span
-                      className={`truncate text-xs ${
-                        homeWon ? "font-bold text-slate-100" : "text-slate-400"
-                      }`}
-                    >
-                      {m.home_team}
+                    <span className="min-w-0">
+                      <span
+                        className={`block truncate text-xs ${
+                          homeWon ? "font-bold text-slate-100" : "text-slate-400"
+                        }`}
+                      >
+                        {m.home_team}
+                      </span>
+                      {TEAM_OWNER[m.home_team] && (
+                        <span className="block truncate text-[10px] text-slate-600">
+                          {TEAM_OWNER[m.home_team]}
+                        </span>
+                      )}
                     </span>
                     <Flag team={m.home_team} className="text-sm" />
                   </span>
@@ -61,12 +69,19 @@ export function RecentMatches({ matches, limit = 8 }: { matches: Match[]; limit?
                   </span>
                   <span className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
                     <Flag team={m.away_team} className="text-sm" />
-                    <span
-                      className={`truncate text-xs ${
-                        awayWon ? "font-bold text-slate-100" : "text-slate-400"
-                      }`}
-                    >
-                      {m.away_team}
+                    <span className="min-w-0">
+                      <span
+                        className={`block truncate text-xs ${
+                          awayWon ? "font-bold text-slate-100" : "text-slate-400"
+                        }`}
+                      >
+                        {m.away_team}
+                      </span>
+                      {TEAM_OWNER[m.away_team] && (
+                        <span className="block truncate text-[10px] text-slate-600">
+                          {TEAM_OWNER[m.away_team]}
+                        </span>
+                      )}
                     </span>
                   </span>
                 </div>
