@@ -121,9 +121,17 @@ function MatchRow({ match, onChanged }: { match: Match; onChanged: () => void })
   return (
     <div className="flex items-center gap-3 rounded-xl border border-[#1a2d50] bg-[#040d24] px-4 py-3">
       <div className="min-w-0 flex-1">
-        {match.stage && (
-          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400/50">
-            {match.stage}
+        {(match.stage || match.source === "auto" || match.locked) && (
+          <div className="mb-0.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider">
+            {match.stage && <span className="text-amber-400/50">{match.stage}</span>}
+            {match.source === "auto" && !match.locked && (
+              <span className="rounded bg-emerald-500/15 px-1 py-px text-emerald-400/80">
+                Auto
+              </span>
+            )}
+            {match.locked && (
+              <span className="rounded bg-slate-600/30 px-1 py-px text-slate-400">Edited</span>
+            )}
           </div>
         )}
         <div className="flex items-center gap-2 text-sm">

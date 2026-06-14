@@ -5,6 +5,7 @@ import { fetcher } from "@/lib/fetcher";
 import type { Match } from "@/lib/types";
 import { MatchForm } from "@/components/MatchForm";
 import { MatchList } from "@/components/MatchList";
+import { SyncStatus } from "@/components/SyncStatus";
 
 export default function MatchesPage() {
   const { data, isLoading, mutate } = useSWR<Match[]>("/api/matches", fetcher);
@@ -22,6 +23,7 @@ export default function MatchesPage() {
         </p>
       </div>
 
+      <SyncStatus />
       <MatchForm onSaved={() => mutate()} />
       <MatchList matches={matches} loading={isLoading} onChanged={() => mutate()} />
     </div>

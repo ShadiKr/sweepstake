@@ -17,7 +17,28 @@ export interface Match {
   away_score: number;
   stage: string | null;
   pen_winner: string | null;
+  /** The football-data.org match id, when this row came from the API. */
+  external_id: string | null;
+  /** Where the row came from: "auto" (synced) or "manual" (entered by hand). */
+  source: "auto" | "manual";
+  /** When true, the auto-sync will not overwrite this row (a manual override). */
+  locked: boolean;
   created_at: string;
+}
+
+/** Outcome of a sync run, returned by /api/sync. */
+export interface SyncResult {
+  ok: boolean;
+  /** Why nothing happened, if applicable. */
+  skipped?: "no_token" | "throttled";
+  error?: string;
+  inserted?: number;
+  updated?: number;
+  /** Fixtures seen but not stored (no score yet, locked, or team not matched). */
+  ignored?: number;
+  /** API team names we couldn't map to a player's team — report these to fix. */
+  unmatchedTeams?: string[];
+  lastSyncedAt?: string | null;
 }
 
 /** A player's row in the leaderboard, computed from all matches. */

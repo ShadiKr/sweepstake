@@ -29,7 +29,22 @@ function ensureWritableStore(): void {
   }
 }
 
-function normalize(input: MatchInput): Omit<Match, "id" | "created_at"> {
+/** A fixture coming from the auto-sync (football-data.org). */
+export interface ExternalMatch {
+  external_id: string;
+  home_team: string;
+  away_team: string;
+  home_score: number;
+  away_score: number;
+  stage: string | null;
+  pen_winner: string | null;
+}
+
+export type UpsertOutcome = "inserted" | "updated" | "skipped";
+
+function normalize(
+  input: MatchInput,
+): Omit<Match, "id" | "created_at" | "external_id" | "source" | "locked"> {
   return {
     home_team: input.home_team,
     away_team: input.away_team,
@@ -58,8 +73,8 @@ async function neonCreate(input: MatchInput): Promise<Match> {
   const m = normalize(input);
   const sql = getSql();
   const rows = await sql`
-    insert into matches (home_team, away_team, home_score, away_score, stage, pen_winner)
-    values (${m.home_team}, ${m.away_team}, ${m.home_score}, ${m.away_score}, ${m.stage}, ${m.pen_winner})
+    insert into matches (home_team, away_team, home_score, away_score, stage, pen_winner, source)
+    values (${m.home_team}, ${m.away_team}, ${m.home_score}, ${m.away_score}, ${m.stage}, ${m.pen_winner}, 'manual')
     returning *`;
   return rows[0] as Match;
 }
@@ -67,6 +82,7 @@ async function neonCreate(input: MatchInput): Promise<Match> {
 async function neonUpdate(id: number, input: MatchInput): Promise<Match | null> {
   const m = normalize(input);
   const sql = getSql();
+  // A hand edit locks the row so the auto-sync won't overwrite it afterwards.
   const rows = await sql`
     update matches set
       home_team = ${m.home_team},
@@ -74,7 +90,8 @@ async function neonUpdate(id: number, input: MatchInput): Promise<Match | null> 
       home_score = ${m.home_score},
       away_score = ${m.away_score},
       stage = ${m.stage},
-      pen_winner = ${m.pen_winner}
+      pen_winner = ${m.pen_winner},
+      locked = true
     where id = ${id}
     returning *`;
   return (rows[0] as Match) ?? null;
@@ -84,6 +101,39 @@ async function neonDelete(id: number): Promise<boolean> {
   const sql = getSql();
   const rows = await sql`delete from matches where id = ${id} returning id`;
   return rows.length > 0;
+}
+
+async function neonUpsertExternal(m: ExternalMatch): Promise<UpsertOutcome> {
+  const sql = getSql();
+  // Upsert on external_id; never overwrite a locked (manually overridden) row.
+  // `xmax = 0` is true only for freshly inserted rows.
+  const rows = await sql`
+    insert into matches (external_id, home_team, away_team, home_score, away_score, stage, pen_winner, source)
+    values (${m.external_id}, ${m.home_team}, ${m.away_team}, ${m.home_score}, ${m.away_score}, ${m.stage}, ${m.pen_winner}, 'auto')
+    on conflict (external_id) do update set
+      home_team = excluded.home_team,
+      away_team = excluded.away_team,
+      home_score = excluded.home_score,
+      away_score = excluded.away_score,
+      stage = excluded.stage,
+      pen_winner = excluded.pen_winner
+    where matches.locked = false
+    returning (xmax = 0) as inserted`;
+  if (rows.length === 0) return "skipped";
+  return (rows[0] as { inserted: boolean }).inserted ? "inserted" : "updated";
+}
+
+async function neonGetLastSyncedAt(): Promise<string | null> {
+  const sql = getSql();
+  const rows = await sql`select last_synced_at from sync_state where id = 1`;
+  return (rows[0]?.last_synced_at as string | null) ?? null;
+}
+
+async function neonSetLastSyncedAt(iso: string): Promise<void> {
+  const sql = getSql();
+  await sql`
+    insert into sync_state (id, last_synced_at) values (1, ${iso})
+    on conflict (id) do update set last_synced_at = excluded.last_synced_at`;
 }
 
 // ---------------------------------------------------------------------------
@@ -116,7 +166,14 @@ async function fileList(): Promise<Match[]> {
 async function fileCreate(input: MatchInput): Promise<Match> {
   const all = await fileReadAll();
   const id = all.reduce((max, m) => Math.max(max, m.id), 0) + 1;
-  const match: Match = { id, created_at: new Date().toISOString(), ...normalize(input) };
+  const match: Match = {
+    id,
+    created_at: new Date().toISOString(),
+    external_id: null,
+    source: "manual",
+    locked: false,
+    ...normalize(input),
+  };
   all.push(match);
   await fileWriteAll(all);
   return match;
@@ -126,7 +183,7 @@ async function fileUpdate(id: number, input: MatchInput): Promise<Match | null> 
   const all = await fileReadAll();
   const index = all.findIndex((m) => m.id === id);
   if (index === -1) return null;
-  all[index] = { ...all[index], ...normalize(input) };
+  all[index] = { ...all[index], ...normalize(input), locked: true };
   await fileWriteAll(all);
   return all[index];
 }
@@ -139,6 +196,52 @@ async function fileDelete(id: number): Promise<boolean> {
   return true;
 }
 
+async function fileUpsertExternal(m: ExternalMatch): Promise<UpsertOutcome> {
+  const all = await fileReadAll();
+  const existing = all.find((row) => row.external_id === m.external_id);
+  if (existing) {
+    if (existing.locked) return "skipped";
+    Object.assign(existing, {
+      home_team: m.home_team,
+      away_team: m.away_team,
+      home_score: m.home_score,
+      away_score: m.away_score,
+      stage: m.stage,
+      pen_winner: m.pen_winner,
+    });
+    await fileWriteAll(all);
+    return "updated";
+  }
+  const id = all.reduce((max, row) => Math.max(max, row.id), 0) + 1;
+  all.push({
+    id,
+    created_at: new Date().toISOString(),
+    source: "auto",
+    locked: false,
+    ...m,
+  });
+  await fileWriteAll(all);
+  return "inserted";
+}
+
+const SYNC_FILE = path.join(process.cwd(), ".data", "sync.json");
+
+async function fileGetLastSyncedAt(): Promise<string | null> {
+  ensureWritableStore();
+  try {
+    const raw = await fs.readFile(SYNC_FILE, "utf8");
+    return (JSON.parse(raw) as { last_synced_at: string | null }).last_synced_at ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fileSetLastSyncedAt(iso: string): Promise<void> {
+  ensureWritableStore();
+  await fs.mkdir(path.dirname(SYNC_FILE), { recursive: true });
+  await fs.writeFile(SYNC_FILE, JSON.stringify({ last_synced_at: iso }), "utf8");
+}
+
 // ---------------------------------------------------------------------------
 // Public API — picks the implementation based on DATABASE_URL
 // ---------------------------------------------------------------------------
@@ -147,3 +250,6 @@ export const listMatches = usingDatabase ? neonList : fileList;
 export const createMatch = usingDatabase ? neonCreate : fileCreate;
 export const updateMatch = usingDatabase ? neonUpdate : fileUpdate;
 export const deleteMatch = usingDatabase ? neonDelete : fileDelete;
+export const upsertExternalMatch = usingDatabase ? neonUpsertExternal : fileUpsertExternal;
+export const getLastSyncedAt = usingDatabase ? neonGetLastSyncedAt : fileGetLastSyncedAt;
+export const setLastSyncedAt = usingDatabase ? neonSetLastSyncedAt : fileSetLastSyncedAt;
