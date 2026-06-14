@@ -6,6 +6,7 @@ import { computeStandings, computeTeamStats } from "@/lib/scoring";
 import type { Match } from "@/lib/types";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { RecentMatches } from "@/components/RecentMatches";
+import { TeamLookup } from "@/components/TeamLookup";
 
 export default function Home() {
   const { data, error, isLoading } = useSWR<Match[]>("/api/matches", fetcher, {
@@ -23,6 +24,8 @@ export default function Home() {
           Couldn&apos;t load matches. Check the database connection.
         </p>
       )}
+
+      <TeamLookup />
 
       {isLoading ? (
         <p className="text-sm text-slate-500">Loading…</p>
