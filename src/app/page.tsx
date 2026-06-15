@@ -3,12 +3,14 @@
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { computeStandings, computeTeamStats } from "@/lib/scoring";
+import { useAutoSync } from "@/lib/useAutoSync";
 import type { Match } from "@/lib/types";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { RecentMatches } from "@/components/RecentMatches";
 import { TeamLookup } from "@/components/TeamLookup";
 
 export default function Home() {
+  useAutoSync();
   const { data, error, isLoading } = useSWR<Match[]>("/api/matches", fetcher, {
     refreshInterval: 15000,
   });

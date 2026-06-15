@@ -47,7 +47,7 @@ export function SyncStatus() {
     setBusy(true);
     setMsg(null);
     try {
-      const res = await fetch("/api/sync", { method: "POST" });
+      const res = await fetch("/api/sync?force=1", { method: "POST" });
       const result = (await res.json()) as SyncResult;
       setMsg(describe(result));
       mutate("/api/sync");

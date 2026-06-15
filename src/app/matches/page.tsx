@@ -2,12 +2,14 @@
 
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
+import { useAutoSync } from "@/lib/useAutoSync";
 import type { Match } from "@/lib/types";
 import { MatchForm } from "@/components/MatchForm";
 import { MatchList } from "@/components/MatchList";
 import { SyncStatus } from "@/components/SyncStatus";
 
 export default function MatchesPage() {
+  useAutoSync();
   const { data, isLoading, mutate } = useSWR<Match[]>("/api/matches", fetcher);
   const matches = data ?? [];
 

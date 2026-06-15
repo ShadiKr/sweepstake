@@ -14,8 +14,13 @@ export async function GET() {
   });
 }
 
-/** Force a sync now (used by the "Sync now" button and any cron job). */
-export async function POST() {
-  const result = await syncMatches({ force: true });
+/**
+ * Run a sync. The client triggers this on every page load (both pages) so
+ * scores stay fresh. `?force=1` (the "Sync now" button) bypasses the throttle;
+ * the automatic heartbeat omits it and is throttled inside syncMatches.
+ */
+export async function POST(req: Request) {
+  const force = new URL(req.url).searchParams.get("force") === "1";
+  const result = await syncMatches({ force });
   return NextResponse.json(result);
 }
