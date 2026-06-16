@@ -1,5 +1,5 @@
 import type { Match, Player, Standing, TeamStat } from "./types";
-import { DRAW, PLAYERS, TEAM_OWNER } from "./teams";
+import { PLAYERS, TEAM_OWNER } from "./teams";
 
 /**
  * Compute the player leaderboard from the full list of matches.
@@ -107,34 +107,32 @@ export function computeTeamStats(matches: Match[]): Record<string, TeamStat> {
 }
 
 /**
- * Cumulative points for a player over time, one value per match their teams
- * played (sorted by created_at), starting from 0.
- * Used to draw a sparkline in the leaderboard breakdown.
+ * Cumulative points for every player over time, aligned to the global match
+ * order (sorted by created_at). Each player's series has length
+ * `matches.length + 1` (starting at 0), so all lines share one x-axis.
+ * Used by the Chart page.
  */
-export function computePointsTimeline(matches: Match[], player: Player): number[] {
-  const playerTeams = new Set(DRAW[player]);
+export function computeCumulativePoints(matches: Match[]): Record<Player, number[]> {
   const sorted = [...matches].sort((a, b) =>
     a.created_at.localeCompare(b.created_at),
   );
 
-  let cumulative = 0;
-  const timeline: number[] = [0];
+  const totals = Object.fromEntries(PLAYERS.map((p) => [p, 0])) as Record<Player, number>;
+  const series = Object.fromEntries(PLAYERS.map((p) => [p, [0]])) as Record<Player, number[]>;
 
   for (const m of sorted) {
-    const homeIsPlayer = playerTeams.has(m.home_team);
-    const awayIsPlayer = playerTeams.has(m.away_team);
-    if (!homeIsPlayer && !awayIsPlayer) continue;
-
-    if (homeIsPlayer) {
-      if (m.home_score > m.away_score) cumulative += 3;
-      else if (m.home_score === m.away_score) cumulative += 1;
+    const homeOwner = TEAM_OWNER[m.home_team];
+    const awayOwner = TEAM_OWNER[m.away_team];
+    if (homeOwner) {
+      if (m.home_score > m.away_score) totals[homeOwner] += 3;
+      else if (m.home_score === m.away_score) totals[homeOwner] += 1;
     }
-    if (awayIsPlayer) {
-      if (m.away_score > m.home_score) cumulative += 3;
-      else if (m.home_score === m.away_score) cumulative += 1;
+    if (awayOwner) {
+      if (m.away_score > m.home_score) totals[awayOwner] += 3;
+      else if (m.home_score === m.away_score) totals[awayOwner] += 1;
     }
-    timeline.push(cumulative);
+    for (const p of PLAYERS) series[p].push(totals[p]);
   }
 
-  return timeline;
+  return series;
 }

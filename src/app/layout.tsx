@@ -43,6 +43,12 @@ export default function RootLayout({
                 Leaderboard
               </Link>
               <Link
+                href="/chart"
+                className="text-slate-300 transition-colors hover:text-amber-400"
+              >
+                Chart
+              </Link>
+              <Link
                 href="/matches"
                 className="text-slate-300 transition-colors hover:text-amber-400"
               >
