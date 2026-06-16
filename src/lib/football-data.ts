@@ -22,10 +22,13 @@ export interface ApiFixture {
   /** "HOME" | "AWAY" if a knockout tie was settled on penalties, else null. */
   penWinner: "HOME" | "AWAY" | null;
   status: string;
+  /** UTC kickoff time as ISO string. */
+  utcDate: string;
 }
 
 interface RawMatch {
   id: number;
+  utcDate: string;
   status: string;
   stage: string;
   group: string | null;
@@ -101,6 +104,7 @@ export async function fetchWorldCupFixtures(token: string): Promise<ApiFixture[]
       stage: stageLabel(m),
       penWinner,
       status: m.status,
+      utcDate: m.utcDate,
     };
   });
 }

@@ -8,6 +8,7 @@ import type { Match } from "@/lib/types";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { RecentMatches } from "@/components/RecentMatches";
 import { TeamLookup } from "@/components/TeamLookup";
+import { UpcomingFixtures } from "@/components/UpcomingFixtures";
 
 export default function Home() {
   useAutoSync();
@@ -34,9 +35,12 @@ export default function Home() {
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <LeaderboardTable standings={standings} teamStats={teamStats} />
+            <LeaderboardTable standings={standings} teamStats={teamStats} matches={matches} />
           </div>
-          <RecentMatches matches={matches} />
+          <div className="space-y-6">
+            <RecentMatches matches={matches} />
+            <UpcomingFixtures />
+          </div>
         </div>
       )}
     </div>

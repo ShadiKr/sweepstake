@@ -54,6 +54,16 @@ export interface Standing {
   points: number;
 }
 
+/** An upcoming (not yet played) fixture from the auto-sync, stored in sync_state. */
+export interface UpcomingFixture {
+  externalId: string;
+  homeTeam: string;
+  awayTeam: string;
+  /** UTC kickoff time as ISO string. */
+  kickoffAt: string;
+  stage: string | null;
+}
+
 /** Aggregated stats for a single team across all its matches. */
 export interface TeamStat {
   team: string;

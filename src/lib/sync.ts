@@ -2,10 +2,11 @@ import { fetchWorldCupFixtures, FootballDataError } from "./football-data";
 import {
   getLastSyncedAt,
   setLastSyncedAt,
+  setUpcomingFixtures,
   upsertExternalMatch,
 } from "./matches-store";
 import { resolveTeam } from "./team-matching";
-import type { SyncResult } from "./types";
+import type { SyncResult, UpcomingFixture } from "./types";
 
 /** Minimum time between automatic syncs. Low enough to sync on effectively every page load. */
 const MIN_INTERVAL_MS = 10_000; // 10 seconds
@@ -81,6 +82,24 @@ export async function syncMatches({ force = false } = {}): Promise<SyncResult> {
     else if (outcome === "updated") updated += 1;
     else ignored += 1; // skipped (locked)
   }
+
+  // Also store upcoming (unscored) fixtures for the "Coming Up" sidebar.
+  const upcoming: UpcomingFixture[] = [];
+  for (const f of fixtures) {
+    if (f.homeScore != null || f.awayScore != null) continue;
+    const home = resolveTeam(f.homeName);
+    const away = resolveTeam(f.awayName);
+    if (!home && !away) continue; // neither team is in the draw
+    upcoming.push({
+      externalId: f.externalId,
+      homeTeam: home ?? f.homeName,
+      awayTeam: away ?? f.awayName,
+      kickoffAt: f.utcDate,
+      stage: f.stage,
+    });
+  }
+  upcoming.sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
+  await setUpcomingFixtures(upcoming.slice(0, 15));
 
   const now = new Date().toISOString();
   await setLastSyncedAt(now);

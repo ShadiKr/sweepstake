@@ -1,5 +1,5 @@
 import type { Match, Player, Standing, TeamStat } from "./types";
-import { PLAYERS, TEAM_OWNER } from "./teams";
+import { DRAW, PLAYERS, TEAM_OWNER } from "./teams";
 
 /**
  * Compute the player leaderboard from the full list of matches.
@@ -104,4 +104,37 @@ export function computeTeamStats(matches: Match[]): Record<string, TeamStat> {
   }
 
   return stats;
+}
+
+/**
+ * Cumulative points for a player over time, one value per match their teams
+ * played (sorted by created_at), starting from 0.
+ * Used to draw a sparkline in the leaderboard breakdown.
+ */
+export function computePointsTimeline(matches: Match[], player: Player): number[] {
+  const playerTeams = new Set(DRAW[player]);
+  const sorted = [...matches].sort((a, b) =>
+    a.created_at.localeCompare(b.created_at),
+  );
+
+  let cumulative = 0;
+  const timeline: number[] = [0];
+
+  for (const m of sorted) {
+    const homeIsPlayer = playerTeams.has(m.home_team);
+    const awayIsPlayer = playerTeams.has(m.away_team);
+    if (!homeIsPlayer && !awayIsPlayer) continue;
+
+    if (homeIsPlayer) {
+      if (m.home_score > m.away_score) cumulative += 3;
+      else if (m.home_score === m.away_score) cumulative += 1;
+    }
+    if (awayIsPlayer) {
+      if (m.away_score > m.home_score) cumulative += 3;
+      else if (m.home_score === m.away_score) cumulative += 1;
+    }
+    timeline.push(cumulative);
+  }
+
+  return timeline;
 }

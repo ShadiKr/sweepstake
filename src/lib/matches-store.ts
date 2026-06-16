@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { promises as fs } from "fs";
 import path from "path";
-import type { Match } from "./types";
+import type { Match, UpcomingFixture } from "./types";
 import type { MatchInput } from "./validation";
 
 /**
@@ -136,6 +136,21 @@ async function neonSetLastSyncedAt(iso: string): Promise<void> {
     on conflict (id) do update set last_synced_at = excluded.last_synced_at`;
 }
 
+async function neonGetUpcomingFixtures(): Promise<UpcomingFixture[]> {
+  const sql = getSql();
+  const rows = await sql`select upcoming_fixtures from sync_state where id = 1`;
+  const val = rows[0]?.upcoming_fixtures;
+  if (!val) return [];
+  return val as UpcomingFixture[];
+}
+
+async function neonSetUpcomingFixtures(fixtures: UpcomingFixture[]): Promise<void> {
+  const sql = getSql();
+  await sql`
+    update sync_state set upcoming_fixtures = ${JSON.stringify(fixtures)}::jsonb
+    where id = 1`;
+}
+
 // ---------------------------------------------------------------------------
 // Local JSON file fallback (development only)
 // ---------------------------------------------------------------------------
@@ -226,20 +241,39 @@ async function fileUpsertExternal(m: ExternalMatch): Promise<UpsertOutcome> {
 
 const SYNC_FILE = path.join(process.cwd(), ".data", "sync.json");
 
-async function fileGetLastSyncedAt(): Promise<string | null> {
-  ensureWritableStore();
+type SyncFileData = { last_synced_at?: string | null; upcoming_fixtures?: UpcomingFixture[] };
+
+async function readSyncFile(): Promise<SyncFileData> {
   try {
     const raw = await fs.readFile(SYNC_FILE, "utf8");
-    return (JSON.parse(raw) as { last_synced_at: string | null }).last_synced_at ?? null;
+    return JSON.parse(raw) as SyncFileData;
   } catch {
-    return null;
+    return {};
   }
 }
 
-async function fileSetLastSyncedAt(iso: string): Promise<void> {
+async function writeSyncFile(data: SyncFileData): Promise<void> {
   ensureWritableStore();
   await fs.mkdir(path.dirname(SYNC_FILE), { recursive: true });
-  await fs.writeFile(SYNC_FILE, JSON.stringify({ last_synced_at: iso }), "utf8");
+  await fs.writeFile(SYNC_FILE, JSON.stringify(data), "utf8");
+}
+
+async function fileGetLastSyncedAt(): Promise<string | null> {
+  ensureWritableStore();
+  return (await readSyncFile()).last_synced_at ?? null;
+}
+
+async function fileSetLastSyncedAt(iso: string): Promise<void> {
+  await writeSyncFile({ ...(await readSyncFile()), last_synced_at: iso });
+}
+
+async function fileGetUpcomingFixtures(): Promise<UpcomingFixture[]> {
+  ensureWritableStore();
+  return (await readSyncFile()).upcoming_fixtures ?? [];
+}
+
+async function fileSetUpcomingFixtures(fixtures: UpcomingFixture[]): Promise<void> {
+  await writeSyncFile({ ...(await readSyncFile()), upcoming_fixtures: fixtures });
 }
 
 // ---------------------------------------------------------------------------
@@ -253,3 +287,5 @@ export const deleteMatch = usingDatabase ? neonDelete : fileDelete;
 export const upsertExternalMatch = usingDatabase ? neonUpsertExternal : fileUpsertExternal;
 export const getLastSyncedAt = usingDatabase ? neonGetLastSyncedAt : fileGetLastSyncedAt;
 export const setLastSyncedAt = usingDatabase ? neonSetLastSyncedAt : fileSetLastSyncedAt;
+export const getUpcomingFixtures = usingDatabase ? neonGetUpcomingFixtures : fileGetUpcomingFixtures;
+export const setUpcomingFixtures = usingDatabase ? neonSetUpcomingFixtures : fileSetUpcomingFixtures;

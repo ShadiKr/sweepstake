@@ -1,20 +1,31 @@
 "use client";
 
 import { useState } from "react";
+import useSWR from "swr";
+import { fetcher } from "@/lib/fetcher";
+import { computePointsTimeline } from "@/lib/scoring";
 import { DRAW } from "@/lib/teams";
-import type { Player, Standing, TeamStat } from "@/lib/types";
+import type { Match, Player, Standing, TeamStat, UpcomingFixture } from "@/lib/types";
 import { Flag } from "./Flag";
+import { Sparkline } from "./Sparkline";
 
 const medals = ["🥇", "🥈", "🥉"];
 
 export function LeaderboardTable({
   standings,
   teamStats,
+  matches,
 }: {
   standings: Standing[];
   teamStats: Record<string, TeamStat>;
+  matches: Match[];
 }) {
   const [open, setOpen] = useState<Player | null>(null);
+  const { data: upcomingFixtures = [] } = useSWR<UpcomingFixture[]>(
+    "/api/fixtures",
+    fetcher,
+    { refreshInterval: 60000 },
+  );
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#1a2d50]">
@@ -42,6 +53,8 @@ export function LeaderboardTable({
                 isOpen={isOpen}
                 onToggle={() => setOpen(isOpen ? null : s.player)}
                 teamStats={teamStats}
+                matches={matches}
+                upcomingFixtures={upcomingFixtures}
               />
             );
           })}
@@ -57,12 +70,16 @@ function FragmentRow({
   isOpen,
   onToggle,
   teamStats,
+  matches,
+  upcomingFixtures,
 }: {
   standing: Standing;
   rank: number;
   isOpen: boolean;
   onToggle: () => void;
   teamStats: Record<string, TeamStat>;
+  matches: Match[];
+  upcomingFixtures: UpcomingFixture[];
 }) {
   const isTop3 = rank < 3;
   return (
@@ -112,7 +129,12 @@ function FragmentRow({
       {isOpen && (
         <tr className="bg-[#071130]">
           <td colSpan={8} className="px-3 py-3">
-            <TeamBreakdown player={s.player} teamStats={teamStats} />
+            <TeamBreakdown
+              player={s.player}
+              teamStats={teamStats}
+              matches={matches}
+              upcomingFixtures={upcomingFixtures}
+            />
           </td>
         </tr>
       )}
@@ -123,17 +145,56 @@ function FragmentRow({
 function TeamBreakdown({
   player,
   teamStats,
+  matches,
+  upcomingFixtures,
 }: {
   player: Player;
   teamStats: Record<string, TeamStat>;
+  matches: Match[];
+  upcomingFixtures: UpcomingFixture[];
 }) {
+  const playerTeams = new Set(DRAW[player]);
   const teams = [...DRAW[player]].sort((a, b) => {
     const pa = teamStats[a]?.points ?? 0;
     const pb = teamStats[b]?.points ?? 0;
     return pb - pa;
   });
 
+  const nextFixture = upcomingFixtures.find(
+    (f) => playerTeams.has(f.homeTeam) || playerTeams.has(f.awayTeam),
+  );
+
+  const timeline = computePointsTimeline(matches, player);
+
+  function fmtKickoff(iso: string): string {
+    const d = new Date(iso);
+    const today = new Date();
+    const diffDays = Math.round(
+      (new Date(iso).setHours(0, 0, 0, 0) - today.setHours(0, 0, 0, 0)) / 86400000,
+    );
+    const dayStr = diffDays === 0 ? "Today" : diffDays === 1 ? "Tomorrow" :
+      d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    return `${dayStr} ${time}`;
+  }
+
   return (
+    <div className="space-y-3">
+      {(nextFixture || timeline.length > 1) && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {nextFixture && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <span className="text-slate-600">⏰</span>
+              <span className="font-medium text-slate-300">
+                {nextFixture.homeTeam} vs {nextFixture.awayTeam}
+              </span>
+              <span className="text-slate-600">·</span>
+              <span>{fmtKickoff(nextFixture.kickoffAt)}</span>
+            </div>
+          )}
+          {timeline.length > 1 && <Sparkline values={timeline} />}
+        </div>
+      )}
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {teams.map((team) => {
         const t = teamStats[team];
@@ -159,6 +220,7 @@ function TeamBreakdown({
           </div>
         );
       })}
+    </div>
     </div>
   );
 }
