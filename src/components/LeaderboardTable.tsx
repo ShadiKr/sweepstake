@@ -3,7 +3,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
-import { DRAW } from "@/lib/teams";
+import { DRAW, TEAM_OWNER } from "@/lib/teams";
 import type { Player, Standing, TeamStat, UpcomingFixture } from "@/lib/types";
 import { Flag } from "./Flag";
 
@@ -23,6 +23,23 @@ export function LeaderboardTable({
     fetcher,
     { refreshInterval: 60000 },
   );
+
+  // Only the players whose team plays on the soonest upcoming day get a
+  // "Next Up" badge — otherwise nearly everyone has *some* future game.
+  const nextUpPlayers = new Set<Player>();
+  if (upcomingFixtures.length > 0) {
+    const soonest = upcomingFixtures.reduce((min, f) =>
+      f.kickoffAt < min.kickoffAt ? f : min,
+    );
+    const soonestDay = new Date(soonest.kickoffAt).toDateString();
+    for (const f of upcomingFixtures) {
+      if (new Date(f.kickoffAt).toDateString() !== soonestDay) continue;
+      const ho = TEAM_OWNER[f.homeTeam];
+      const ao = TEAM_OWNER[f.awayTeam];
+      if (ho) nextUpPlayers.add(ho);
+      if (ao) nextUpPlayers.add(ao);
+    }
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#1a2d50]">
@@ -50,7 +67,7 @@ export function LeaderboardTable({
                 isOpen={isOpen}
                 onToggle={() => setOpen(isOpen ? null : s.player)}
                 teamStats={teamStats}
-                upcomingFixtures={upcomingFixtures}
+                isNextUp={nextUpPlayers.has(s.player)}
               />
             );
           })}
@@ -66,20 +83,16 @@ function FragmentRow({
   isOpen,
   onToggle,
   teamStats,
-  upcomingFixtures,
+  isNextUp,
 }: {
   standing: Standing;
   rank: number;
   isOpen: boolean;
   onToggle: () => void;
   teamStats: Record<string, TeamStat>;
-  upcomingFixtures: UpcomingFixture[];
+  isNextUp: boolean;
 }) {
   const isTop3 = rank < 3;
-  const playerTeams = new Set(DRAW[s.player]);
-  const nextFixture = upcomingFixtures.find(
-    (f) => playerTeams.has(f.homeTeam) || playerTeams.has(f.awayTeam),
-  );
 
   return (
     <>
@@ -93,19 +106,19 @@ function FragmentRow({
           {medals[rank] ?? <span className="text-slate-600">{rank + 1}</span>}
         </td>
         <td className="px-3 py-3 font-semibold text-slate-100">
-          <span className="inline-flex items-center gap-2">
+          <span className="flex flex-wrap items-center gap-2">
             <span
               className={`text-xs text-slate-600 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
             >
               ▶
             </span>
             {s.player}
+            {isNextUp && (
+              <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+                Next Up
+              </span>
+            )}
           </span>
-          {nextFixture && (
-            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80">
-              Next Up
-            </span>
-          )}
         </td>
         <td className="px-2 py-3 align-top text-center text-slate-400 sm:align-middle">{s.played}</td>
         <td className="hidden px-2 py-3 text-center align-top text-slate-400 sm:table-cell sm:align-middle">{s.won}</td>
