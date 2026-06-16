@@ -23,6 +23,8 @@ export interface Match {
   source: "auto" | "manual";
   /** When true, the auto-sync will not overwrite this row (a manual override). */
   locked: boolean;
+  /** Real kickoff time (ISO) from the API, when known; null for manual entries. */
+  played_at: string | null;
   created_at: string;
 }
 
@@ -62,6 +64,17 @@ export interface UpcomingFixture {
   /** UTC kickoff time as ISO string. */
   kickoffAt: string;
   stage: string | null;
+}
+
+/** Cumulative points per player, grouped by matchday, for the Chart page. */
+export interface PointsTimeline {
+  /** One ISO date (YYYY-MM-DD) per matchday, in order. */
+  labels: string[];
+  /**
+   * Per player, cumulative points after each matchday. Length is
+   * `labels.length + 1`: index 0 is the start (0), index k is after matchday k.
+   */
+  series: Record<Player, number[]>;
 }
 
 /** Aggregated stats for a single team across all its matches. */

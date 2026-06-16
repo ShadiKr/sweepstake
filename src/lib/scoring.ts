@@ -1,4 +1,4 @@
-import type { Match, Player, Standing, TeamStat } from "./types";
+import type { Match, Player, PointsTimeline, Standing, TeamStat } from "./types";
 import { PLAYERS, TEAM_OWNER } from "./teams";
 
 /**
@@ -107,32 +107,38 @@ export function computeTeamStats(matches: Match[]): Record<string, TeamStat> {
 }
 
 /**
- * Cumulative points for every player over time, aligned to the global match
- * order (sorted by created_at). Each player's series has length
- * `matches.length + 1` (starting at 0), so all lines share one x-axis.
- * Used by the Chart page.
+ * Group matches into matchdays (by real kickoff date, falling back to when the
+ * result was entered) and accumulate each player's points after each matchday,
+ * so every player's line shares one x-axis of matchdays.
  */
-export function computeCumulativePoints(matches: Match[]): Record<Player, number[]> {
-  const sorted = [...matches].sort((a, b) =>
-    a.created_at.localeCompare(b.created_at),
-  );
+export function computeCumulativePoints(matches: Match[]): PointsTimeline {
+  const dayOf = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
+
+  const byDay = new Map<string, Match[]>();
+  for (const m of matches) {
+    const day = dayOf(m);
+    (byDay.get(day) ?? byDay.set(day, []).get(day)!).push(m);
+  }
+  const labels = [...byDay.keys()].sort();
 
   const totals = Object.fromEntries(PLAYERS.map((p) => [p, 0])) as Record<Player, number>;
   const series = Object.fromEntries(PLAYERS.map((p) => [p, [0]])) as Record<Player, number[]>;
 
-  for (const m of sorted) {
-    const homeOwner = TEAM_OWNER[m.home_team];
-    const awayOwner = TEAM_OWNER[m.away_team];
-    if (homeOwner) {
-      if (m.home_score > m.away_score) totals[homeOwner] += 3;
-      else if (m.home_score === m.away_score) totals[homeOwner] += 1;
-    }
-    if (awayOwner) {
-      if (m.away_score > m.home_score) totals[awayOwner] += 3;
-      else if (m.home_score === m.away_score) totals[awayOwner] += 1;
+  for (const day of labels) {
+    for (const m of byDay.get(day)!) {
+      const homeOwner = TEAM_OWNER[m.home_team];
+      const awayOwner = TEAM_OWNER[m.away_team];
+      if (homeOwner) {
+        if (m.home_score > m.away_score) totals[homeOwner] += 3;
+        else if (m.home_score === m.away_score) totals[homeOwner] += 1;
+      }
+      if (awayOwner) {
+        if (m.away_score > m.home_score) totals[awayOwner] += 3;
+        else if (m.home_score === m.away_score) totals[awayOwner] += 1;
+      }
     }
     for (const p of PLAYERS) series[p].push(totals[p]);
   }
 
-  return series;
+  return { labels, series };
 }

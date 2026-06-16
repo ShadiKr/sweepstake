@@ -38,13 +38,15 @@ export interface ExternalMatch {
   away_score: number;
   stage: string | null;
   pen_winner: string | null;
+  /** Real kickoff time (ISO) from the API. */
+  played_at: string;
 }
 
 export type UpsertOutcome = "inserted" | "updated" | "skipped";
 
 function normalize(
   input: MatchInput,
-): Omit<Match, "id" | "created_at" | "external_id" | "source" | "locked"> {
+): Omit<Match, "id" | "created_at" | "external_id" | "source" | "locked" | "played_at"> {
   return {
     home_team: input.home_team,
     away_team: input.away_team,
@@ -108,15 +110,16 @@ async function neonUpsertExternal(m: ExternalMatch): Promise<UpsertOutcome> {
   // Upsert on external_id; never overwrite a locked (manually overridden) row.
   // `xmax = 0` is true only for freshly inserted rows.
   const rows = await sql`
-    insert into matches (external_id, home_team, away_team, home_score, away_score, stage, pen_winner, source)
-    values (${m.external_id}, ${m.home_team}, ${m.away_team}, ${m.home_score}, ${m.away_score}, ${m.stage}, ${m.pen_winner}, 'auto')
+    insert into matches (external_id, home_team, away_team, home_score, away_score, stage, pen_winner, source, played_at)
+    values (${m.external_id}, ${m.home_team}, ${m.away_team}, ${m.home_score}, ${m.away_score}, ${m.stage}, ${m.pen_winner}, 'auto', ${m.played_at})
     on conflict (external_id) where external_id is not null do update set
       home_team = excluded.home_team,
       away_team = excluded.away_team,
       home_score = excluded.home_score,
       away_score = excluded.away_score,
       stage = excluded.stage,
-      pen_winner = excluded.pen_winner
+      pen_winner = excluded.pen_winner,
+      played_at = excluded.played_at
     where matches.locked = false
     returning (xmax = 0) as inserted`;
   if (rows.length === 0) return "skipped";
@@ -187,6 +190,7 @@ async function fileCreate(input: MatchInput): Promise<Match> {
     external_id: null,
     source: "manual",
     locked: false,
+    played_at: null,
     ...normalize(input),
   };
   all.push(match);
@@ -223,6 +227,7 @@ async function fileUpsertExternal(m: ExternalMatch): Promise<UpsertOutcome> {
       away_score: m.away_score,
       stage: m.stage,
       pen_winner: m.pen_winner,
+      played_at: m.played_at,
     });
     await fileWriteAll(all);
     return "updated";

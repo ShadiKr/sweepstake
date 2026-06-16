@@ -13,7 +13,7 @@ export default function ChartPage() {
     refreshInterval: 15000,
   });
 
-  const timelines = computeCumulativePoints(data ?? []);
+  const timeline = computeCumulativePoints(data ?? []);
 
   return (
     <div className="space-y-8">
@@ -30,7 +30,7 @@ export default function ChartPage() {
       {isLoading ? (
         <p className="text-sm text-slate-500">Loading…</p>
       ) : (
-        <PointsChart timelines={timelines} />
+        <PointsChart timeline={timeline} />
       )}
     </div>
   );

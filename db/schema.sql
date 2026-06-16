@@ -15,6 +15,7 @@ create table if not exists matches (
   external_id text unique,          -- football-data.org match id, when synced automatically
   source      text not null default 'manual',  -- 'auto' (synced) or 'manual' (entered by hand)
   locked      boolean not null default false,  -- a manual override the sync must not overwrite
+  played_at   timestamptz,          -- real kickoff time (from the API), for grouping by matchday
   created_at  timestamptz not null default now()
 );
 

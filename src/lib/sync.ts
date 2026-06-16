@@ -76,6 +76,7 @@ export async function syncMatches({ force = false } = {}): Promise<SyncResult> {
       away_score: f.awayScore,
       stage: f.stage,
       pen_winner: penWinner,
+      played_at: f.utcDate,
     });
 
     if (outcome === "inserted") inserted += 1;
