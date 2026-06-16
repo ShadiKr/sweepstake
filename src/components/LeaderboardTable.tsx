@@ -9,21 +9,6 @@ import { Flag } from "./Flag";
 
 const medals = ["🥇", "🥈", "🥉"];
 
-function shortKickoff(iso: string): string {
-  const d = new Date(iso);
-  const today = new Date();
-  const diffDays = Math.round(
-    (new Date(iso).setHours(0, 0, 0, 0) - today.setHours(0, 0, 0, 0)) / 86400000,
-  );
-  const dayStr =
-    diffDays === 0
-      ? "Today"
-      : diffDays === 1
-        ? "Tomorrow"
-        : d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-  const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-  return `${dayStr} ${time}`;
-}
 
 export function LeaderboardTable({
   standings,
@@ -95,11 +80,6 @@ function FragmentRow({
   const nextFixture = upcomingFixtures.find(
     (f) => playerTeams.has(f.homeTeam) || playerTeams.has(f.awayTeam),
   );
-  const nextTeam = nextFixture
-    ? playerTeams.has(nextFixture.homeTeam)
-      ? nextFixture.homeTeam
-      : nextFixture.awayTeam
-    : null;
 
   return (
     <>
@@ -121,13 +101,9 @@ function FragmentRow({
             </span>
             {s.player}
           </span>
-          {nextTeam && (
-            <span className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
-              <span className="text-slate-600">⏰</span>
-              <Flag team={nextTeam} className="text-[11px]" />
-              <span className="text-slate-400">{nextTeam}</span>
-              <span className="hidden text-slate-600 sm:inline">·</span>
-              <span className="hidden sm:inline">{shortKickoff(nextFixture!.kickoffAt)}</span>
+          {nextFixture && (
+            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80">
+              Next Up
             </span>
           )}
         </td>
