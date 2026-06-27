@@ -54,6 +54,12 @@ export default function RootLayout({
               >
                 Matches
               </Link>
+              <Link
+                href="/banter"
+                className="text-slate-300 transition-colors hover:text-amber-400"
+              >
+                Banter
+              </Link>
             </div>
           </nav>
         </header>

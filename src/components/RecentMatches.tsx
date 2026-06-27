@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { Match } from "@/lib/types";
 import { TEAM_OWNER } from "@/lib/teams";
 import { Flag } from "./Flag";
+import { IdentityPicker } from "./IdentityPicker";
+import { ReactionBar } from "./ReactionBar";
 
 export function RecentMatches({ matches, limit = 8 }: { matches: Match[]; limit?: number }) {
   const recent = matches.slice(0, limit);
@@ -12,12 +14,15 @@ export function RecentMatches({ matches, limit = 8 }: { matches: Match[]; limit?
         <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400/80">
           Latest Results
         </h2>
-        <Link
-          href="/matches"
-          className="text-xs text-slate-500 transition-colors hover:text-amber-400"
-        >
-          Add / edit →
-        </Link>
+        <div className="flex items-center gap-2">
+          <IdentityPicker compact />
+          <Link
+            href="/matches"
+            className="text-xs text-slate-500 transition-colors hover:text-amber-400"
+          >
+            Add / edit →
+          </Link>
+        </div>
       </div>
 
       {recent.length === 0 ? (
@@ -85,6 +90,7 @@ export function RecentMatches({ matches, limit = 8 }: { matches: Match[]; limit?
                     </span>
                   </span>
                 </div>
+                <ReactionBar matchId={m.id} />
               </li>
             );
           })}

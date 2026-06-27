@@ -77,6 +77,23 @@ export interface PointsTimeline {
   series: Record<Player, number[]>;
 }
 
+/** An emoji reaction left on a match result. */
+export interface Reaction {
+  id: number;
+  match_id: number;
+  emoji: string;
+  author: string;
+  created_at: string;
+}
+
+/** A smack-talk comment on the Banter wall. */
+export interface Comment {
+  id: number;
+  author: string;
+  body: string;
+  created_at: string;
+}
+
 /** Aggregated stats for a single team across all its matches. */
 export interface TeamStat {
   team: string;

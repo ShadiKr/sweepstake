@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { useAutoSync } from "@/lib/useAutoSync";
 import type { Match } from "@/lib/types";
+import { IdentityPicker } from "@/components/IdentityPicker";
 import { MatchForm } from "@/components/MatchForm";
 import { MatchList } from "@/components/MatchList";
 import { SyncStatus } from "@/components/SyncStatus";
@@ -23,6 +24,10 @@ export default function MatchesPage() {
         <p className="mt-1 text-sm text-slate-400">
           Add a result for any two teams. Anyone can add, edit, or delete.
         </p>
+      </div>
+
+      <div className="flex items-center justify-end">
+        <IdentityPicker compact />
       </div>
 
       <SyncStatus />

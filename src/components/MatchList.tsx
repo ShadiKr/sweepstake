@@ -4,6 +4,7 @@ import { useState } from "react";
 import { TEAM_OWNER } from "@/lib/teams";
 import type { Match } from "@/lib/types";
 import { Flag } from "./Flag";
+import { ReactionBar } from "./ReactionBar";
 import {
   MatchFields,
   toMatchBody,
@@ -148,6 +149,7 @@ function MatchRow({ match, onChanged }: { match: Match; onChanged: () => void })
             {match.pen_winner} won on penalties
           </div>
         )}
+        <ReactionBar matchId={match.id} />
       </div>
       <div className="flex shrink-0 gap-1">
         <button

@@ -7,6 +7,7 @@ import { useAutoSync } from "@/lib/useAutoSync";
 import type { Match } from "@/lib/types";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { RecentMatches } from "@/components/RecentMatches";
+import { ShareStandings } from "@/components/ShareStandings";
 import { TeamLookup } from "@/components/TeamLookup";
 import { UpcomingFixtures } from "@/components/UpcomingFixtures";
 
@@ -35,6 +36,12 @@ export default function Home() {
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400/80">
+                Standings
+              </h2>
+              <ShareStandings standings={standings} />
+            </div>
             <LeaderboardTable standings={standings} teamStats={teamStats} />
           </div>
           <div className="space-y-6">
