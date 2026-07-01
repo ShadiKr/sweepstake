@@ -42,7 +42,7 @@ export default function Home() {
               </h2>
               <ShareStandings standings={standings} />
             </div>
-            <LeaderboardTable standings={standings} teamStats={teamStats} />
+            <LeaderboardTable standings={standings} teamStats={teamStats} matches={matches} />
           </div>
           <div className="space-y-6">
             <RecentMatches matches={matches} />

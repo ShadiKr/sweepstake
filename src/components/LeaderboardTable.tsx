@@ -3,8 +3,9 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
+import { computeSurvival } from "@/lib/scoring";
 import { DRAW, TEAM_OWNER } from "@/lib/teams";
-import type { Player, Standing, TeamStat, UpcomingFixture } from "@/lib/types";
+import type { Match, Player, Standing, Survival, TeamStat, UpcomingFixture } from "@/lib/types";
 import { Flag } from "./Flag";
 
 const medals = ["🥇", "🥈", "🥉"];
@@ -13,9 +14,11 @@ const medals = ["🥇", "🥈", "🥉"];
 export function LeaderboardTable({
   standings,
   teamStats,
+  matches,
 }: {
   standings: Standing[];
   teamStats: Record<string, TeamStat>;
+  matches: Match[];
 }) {
   const [open, setOpen] = useState<Player | null>(null);
   const { data: upcomingFixtures = [] } = useSWR<UpcomingFixture[]>(
@@ -23,6 +26,8 @@ export function LeaderboardTable({
     fetcher,
     { refreshInterval: 60000 },
   );
+
+  const survival = computeSurvival(matches, upcomingFixtures);
 
   // Only the players whose team plays on the soonest upcoming day get a
   // "Next Up" badge — otherwise nearly everyone has *some* future game.
@@ -42,7 +47,14 @@ export function LeaderboardTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#1a2d50]">
+    <div className="space-y-2">
+      {survival.knockoutsStarted && (
+        <p className="text-xs text-slate-400">
+          🏆 <span className="font-bold text-amber-300">{survival.aliveCount}</span>{" "}
+          {survival.aliveCount === 1 ? "team" : "teams"} still in the tournament
+        </p>
+      )}
+      <div className="overflow-hidden rounded-xl border border-[#1a2d50]">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-amber-500/30 bg-[#071130]">
@@ -68,11 +80,13 @@ export function LeaderboardTable({
                 onToggle={() => setOpen(isOpen ? null : s.player)}
                 teamStats={teamStats}
                 isNextUp={nextUpPlayers.has(s.player)}
+                survival={survival}
               />
             );
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -84,6 +98,7 @@ function FragmentRow({
   onToggle,
   teamStats,
   isNextUp,
+  survival,
 }: {
   standing: Standing;
   rank: number;
@@ -91,8 +106,11 @@ function FragmentRow({
   onToggle: () => void;
   teamStats: Record<string, TeamStat>;
   isNextUp: boolean;
+  survival: Survival;
 }) {
   const isTop3 = rank < 3;
+  const teams = DRAW[s.player];
+  const remaining = teams.filter((t) => !survival.eliminated.has(t)).length;
 
   return (
     <>
@@ -116,6 +134,18 @@ function FragmentRow({
             {isNextUp && (
               <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400">
                 Next Up
+              </span>
+            )}
+            {survival.knockoutsStarted && (
+              <span
+                title={`${remaining} of ${teams.length} teams still in`}
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  remaining === 0
+                    ? "bg-red-500/15 text-red-400"
+                    : "bg-emerald-500/15 text-emerald-400"
+                }`}
+              >
+                {remaining}/{teams.length} in
               </span>
             )}
           </span>
@@ -146,7 +176,7 @@ function FragmentRow({
       {isOpen && (
         <tr className="bg-[#071130]">
           <td colSpan={8} className="px-3 py-3">
-            <TeamBreakdown player={s.player} teamStats={teamStats} />
+            <TeamBreakdown player={s.player} teamStats={teamStats} survival={survival} />
           </td>
         </tr>
       )}
@@ -157,9 +187,11 @@ function FragmentRow({
 function TeamBreakdown({
   player,
   teamStats,
+  survival,
 }: {
   player: Player;
   teamStats: Record<string, TeamStat>;
+  survival: Survival;
 }) {
   const teams = [...DRAW[player]].sort((a, b) => {
     const pa = teamStats[a]?.points ?? 0;
@@ -171,14 +203,28 @@ function TeamBreakdown({
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {teams.map((team) => {
         const t = teamStats[team];
+        const isOut = survival.knockoutsStarted && survival.eliminated.has(team);
         return (
           <div
             key={team}
-            className="flex items-center justify-between rounded-lg border border-[#1a2d50] bg-[#040d24] px-3 py-2"
+            className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
+              isOut
+                ? "border-red-900/40 bg-red-950/20"
+                : "border-[#1a2d50] bg-[#040d24]"
+            }`}
           >
-            <span className="flex items-center gap-2 text-sm font-medium text-slate-200">
-              <Flag team={team} className="text-base" />
-              {team}
+            <span
+              className={`flex items-center gap-2 text-sm font-medium ${
+                isOut ? "text-slate-500" : "text-slate-200"
+              }`}
+            >
+              <Flag team={team} className={`text-base ${isOut ? "opacity-50 grayscale" : ""}`} />
+              <span className={isOut ? "line-through" : ""}>{team}</span>
+              {isOut && (
+                <span className="rounded bg-red-500/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-red-400 no-underline">
+                  Out
+                </span>
+              )}
             </span>
             <span className="text-xs text-slate-400">
               {t ? (

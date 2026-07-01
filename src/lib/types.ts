@@ -77,6 +77,16 @@ export interface PointsTimeline {
   series: Record<Player, number[]>;
 }
 
+/** Which teams are still in the tournament, once the knockouts begin. */
+export interface Survival {
+  /** True once at least one knockout match has been played. */
+  knockoutsStarted: boolean;
+  /** Teams that are out (only meaningful when knockoutsStarted). */
+  eliminated: Set<string>;
+  /** Total number of teams still alive across the whole tournament. */
+  aliveCount: number;
+}
+
 /** An emoji reaction left on a match result. */
 export interface Reaction {
   id: number;

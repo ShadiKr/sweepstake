@@ -1,5 +1,68 @@
-import type { Match, Player, PointsTimeline, Standing, TeamStat } from "./types";
-import { PLAYERS, TEAM_OWNER } from "./teams";
+import type {
+  Match,
+  Player,
+  PointsTimeline,
+  Standing,
+  Survival,
+  TeamStat,
+  UpcomingFixture,
+} from "./types";
+import { PLAYERS, TEAM_OWNER, TEAMS } from "./teams";
+
+/** A knockout-round stage label (anything past the group stage). */
+export function isKnockoutStage(stage: string | null): boolean {
+  if (!stage) return false;
+  return /round of|quarter|semi|final|third/i.test(stage);
+}
+
+/**
+ * Work out which teams are still alive in the tournament once the knockouts
+ * begin. A team is out if it lost a knockout tie (on the scoreline, or the
+ * penalty shootout), or if it never reached the knockout bracket at all
+ * (i.e. it was eliminated in the group stage).
+ *
+ * The "bracket" = every team that has appeared in a knockout match (played) or
+ * an upcoming knockout fixture. Teams in the draw that aren't in the bracket
+ * once knockouts have started are treated as group-stage exits.
+ */
+export function computeSurvival(
+  matches: Match[],
+  upcoming: UpcomingFixture[] = [],
+): Survival {
+  const knockoutMatches = matches.filter((m) => isKnockoutStage(m.stage));
+  const knockoutsStarted = knockoutMatches.length > 0;
+
+  const bracket = new Set<string>();
+  for (const m of knockoutMatches) {
+    bracket.add(m.home_team);
+    bracket.add(m.away_team);
+  }
+  for (const f of upcoming) {
+    if (!isKnockoutStage(f.stage)) continue;
+    bracket.add(f.homeTeam);
+    bracket.add(f.awayTeam);
+  }
+
+  // Losers of a knockout tie (decisive score, or a penalty shootout).
+  const knockedOut = new Set<string>();
+  for (const m of knockoutMatches) {
+    if (m.home_score > m.away_score) knockedOut.add(m.away_team);
+    else if (m.away_score > m.home_score) knockedOut.add(m.home_team);
+    else if (m.pen_winner) {
+      knockedOut.add(m.pen_winner === m.home_team ? m.away_team : m.home_team);
+    }
+  }
+
+  const alive = new Set<string>();
+  for (const team of bracket) if (!knockedOut.has(team)) alive.add(team);
+
+  const eliminated = new Set<string>();
+  if (knockoutsStarted) {
+    for (const team of TEAMS) if (!alive.has(team)) eliminated.add(team);
+  }
+
+  return { knockoutsStarted, eliminated, aliveCount: alive.size };
+}
 
 /**
  * Compute the player leaderboard from the full list of matches.
